@@ -1375,7 +1375,7 @@
                 for (const key in realTimeListeners) {
                     database.ref(key).off('value', realTimeListeners[key]);
                 }
-                window.location.href = 'deepseek_html_20251013_701cdf.html';
+                window.location.href = '/pemilu-osis/main/pemilos.html';
             }
         }
 
@@ -1406,4 +1406,5 @@
             for (const key in realTimeListeners) {
                 database.ref(key).off('value', realTimeListeners[key]);
             }
+
         });
