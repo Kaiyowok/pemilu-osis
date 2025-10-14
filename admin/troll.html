@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gambar dengan Musik Background</title>
+    <link rel="icon" href="/assets/f.jpeg" type="image/jpeg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 90%;
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        .image-frame {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .main-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.5s ease;
+        }
+
+        .main-image:hover {
+            transform: scale(1.03);
+        }
+
+        .caption {
+            color: white;
+            margin-top: 15px;
+            font-size: 1.2rem;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+
+        .music-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Efek partikel background */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Efek partikel background -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="image-frame">
+            <!-- Ganti URL gambar dengan gambar yang Anda inginkan -->
+            <img src="pemilu-osis/assets/f-bomb.jpeg" 
+                 alt="Pemandangan Gunung" class="main-image">
+            <div class="caption">Kocak salah pw, btw right click dong</div>
+        </div>
+    </div>
+
+
+    <!-- Audio element (tersembunyi) -->
+    <audio id="backgroundMusic" loop autoplay>
+        <!-- Ganti dengan file musik Anda -->
+        <source src="/assets/troll.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung elemen audio.
+    </audio>
+
+    <script>
+        // Membuat partikel background
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Ukuran acak
+                const size = Math.random() * 20 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Posisi acak
+                particle.style.left = `${Math.random() * 100}%`;
+                
+                // Animasi dengan durasi acak
+                const duration = Math.random() * 20 + 10;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Delay acak
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Mengatasi kebijakan autoplay browser
+        function handleAutoplay() {
+            const audio = document.getElementById('backgroundMusic');
+            
+            // Coba putar musik
+            const playPromise = audio.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Musik berhasil diputar');
+                }).catch(error => {
+                    console.log('Autoplay diblokir, menunggu interaksi pengguna');
+                    
+                    // Tampilkan pesan untuk interaksi pengguna
+                    document.body.addEventListener('click', function() {
+                        audio.play();
+                        document.querySelector('.music-indicator').textContent = '🎵 Musik sedang diputar';
+                    }, { once: true });
+                    
+                    document.querySelector('.music-indicator').innerHTML = 
+                        '<span>🔇</span> Klik di mana saja untuk memutar musik';
+                });
+            }
+        }
+
+        // Inisialisasi
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            handleAutoplay();
+            
+            // Ganti gambar secara otomatis setiap 10 detik (opsional)
+            setInterval(changeImage, 10000);
+        });
+
+        // Fungsi untuk mengganti gambar (opsional)
+        function changeImage() {
+            const images = [
+                '/assets/shrek.jpeg',
+                '/assets/superman.jpeg',
+                '/assets/mikel jekson.jpeg'
+            ];
+            
+            
+            const randomIndex = Math.floor(Math.random() * images.length);
+            document.querySelector('.main-image').src = images[randomIndex];
+            document.querySelector('.caption').textContent = captions[randomIndex];
+        }
+    </script>
+</body>
+</html>
