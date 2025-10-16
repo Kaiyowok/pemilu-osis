@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - E-Voting OSIS SMAN 23 Bandung</title>
+    <link rel="icon" href="/pemilu-osis/assets/logo-osis.png" type="image/png">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title" id="toast-title">Success</div>
+            <div class="toast-message" id="toast-message">Operation completed successfully</div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>Admin Panel</h1>
+                        <p>E-Voting OSIS SMAN 23 Bandung</p>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="window.open('/main/pemilos.html', '_blank')">
+                        <i class="fas fa-external-link-alt"></i> Lihat Website
+                    </button>
+                    <button class="btn btn-danger" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </button>
+                <button class="nav-tab" onclick="switchTab('votes')">
+                    <i class="fas fa-vote-yea"></i> Kelola Suara
+                </button>
+                <button class="nav-tab" onclick="switchTab('candidates')">
+                    <i class="fas fa-users"></i> Kelola Kandidat
+                </button>
+                <button class="nav-tab" onclick="switchTab('settings')">
+                    <i class="fas fa-cog"></i> Pengaturan
+                </button>
+                <button class="nav-tab" onclick="switchTab('analytics')">
+                    <i class="fas fa-chart-bar"></i> Analitik
+                </button>
+                <button class="nav-tab" onclick="switchTab('history')">
+                    <i class="fas fa-history"></i> Riwayat
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="content">
+        <div class="container">
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <div class="grid grid-4" style="margin-bottom: 2rem;">
+                    <div class="card">
+                        <div class="stat-card">
+                            <div class="stat-number" id="total-votes-stat">-</div>
+                            <div class="stat-label">Total Suara</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-card">
+                            <div class="stat-number" id="participation-stat">-</div>
+                            <div class="stat-label">Partisipasi</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-card">
+                            <div class="stat-number" id="candidate-count-stat">-</div>
+                            <div class="stat-label">Kandidat</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="stat-card">
+                            <div class="stat-number" id="remaining-stat">-</div>
+                            <div class="stat-label">Belum Vote</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-bar"></i> Grafik Suara per Kandidat
+                            </div>
+                            <div class="card-description">Distribusi suara untuk setiap kandidat</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="candidateChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-calendar-alt"></i> Grafik Suara Harian
+                            </div>
+                            <div class="card-description">Perkembangan voting dari hari ke hari</div>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="dailyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Votes Management Tab -->
+            <div id="votes-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <div class="card-title">
+                                    <i class="fas fa-vote-yea"></i> Kelola Data Suara
+                                </div>
+                                <div class="card-description">Tambah, edit, atau hapus data suara</div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-export" onclick="showExportModal('votes')">
+                                    <i class="fas fa-file-excel"></i> Export Excel
+                                </button>
+                                <button class="btn btn-primary" onclick="showAddVoteModal()">
+                                    <i class="fas fa-plus"></i> Tambah Suara
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="form-group">
+                            <label class="form-label">Filter berdasarkan tanggal:</label>
+                            <select id="date-filter" class="form-select" onchange="filterVotesByDate()">
+                                <option value="">Semua Tanggal</option>
+                            </select>
+                        </div>
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>NIPD/NIS</th>
+                                        <th>Kandidat</th>
+                                        <th>Tanggal</th>
+                                        <th>Waktu</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="votes-table-body">
+                                    <tr>
+                                        <td colspan="6" class="loading">
+                                            <div class="spinner"></div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candidates Management Tab -->
+            <div id="candidates-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <div class="card-title">
+                                    <i class="fas fa-users"></i> Kelola Kandidat
+                                </div>
+                                <div class="card-description">Tambah, edit, atau hapus data kandidat</div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-export" onclick="showExportModal('candidates')">
+                                    <i class="fas fa-file-excel"></i> Export Excel
+                                </button>
+                                <button class="btn btn-primary" onclick="showAddCandidateModal()">
+                                    <i class="fas fa-plus"></i> Tambah Kandidat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="grid grid-3" id="candidates-grid">
+                            <!-- Candidates will be loaded here -->
+                            <div class="loading" style="grid-column: 1 / -1;">
+                                <div class="spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-cog"></i> Pengaturan Sistem
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <form id="settings-form">
+                                <div class="form-group">
+                                    <label class="form-label">Total Siswa</label>
+                                    <input type="number" id="total-students" class="form-input" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Status Voting</label>
+                                    <select id="voting-status" class="form-select">
+                                        <option value="true">Buka</option>
+                                        <option value="false">Tutup</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Tanggal Mulai Voting</label>
+                                    <input type="date" id="start-date" class="form-input" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Tanggal Berakhir Voting</label>
+                                    <input type="date" id="end-date" class="form-input" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Simpan Pengaturan
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-trash-alt"></i> Reset Data
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="alert alert-warning">
+                                <strong><i class="fas fa-exclamation-triangle"></i> Peringatan:</strong> Aksi ini tidak dapat dibatalkan!
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <button class="btn btn-export" onclick="showExportModal('all')">
+                                    <i class="fas fa-file-export"></i> Export Semua Data
+                                </button>
+                                <button class="btn btn-warning" onclick="resetVotes()">
+                                    <i class="fas fa-vote-yea"></i> Reset Semua Suara
+                                </button>
+                                <button class="btn btn-danger" onclick="resetAll()">
+                                    <i class="fas fa-bomb"></i> Reset Semua Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-content">
+                <div class="grid grid-2" style="margin-bottom: 2rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-pie"></i> Persentase Suara
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="pieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <i class="fas fa-chart-line"></i> Tren Voting
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fas fa-calendar-day"></i> Detail per Tanggal
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <th>Total Suara</th>
+                                        <th>Kandidat 01</th>
+                                        <th>Kandidat 02</th>
+                                        <th>Kandidat 03</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="daily-stats-table">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history-tab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <div class="card-title">
+                                    <i class="fas fa-history"></i> Riwayat Aksi
+                                </div>
+                                <div class="card-description">Undo/Redo perubahan yang telah dilakukan</div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-export" onclick="showExportModal('history')">
+                                    <i class="fas fa-file-excel"></i> Export Riwayat
+                                </button>
+                                <button class="btn btn-secondary" onclick="undoLastAction()" id="undo-btn" disabled>
+                                    <i class="fas fa-undo"></i> Undo
+                                </button>
+                                <button class="btn btn-secondary" onclick="redoLastAction()" id="redo-btn" disabled>
+                                    <i class="fas fa-redo"></i> Redo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div id="history-list">
+                            <!-- History items will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Vote Modal -->
+    <div id="vote-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="vote-modal-title">Tambah Suara</div>
+            </div>
+            <div class="modal-body">
+                <form id="vote-form">
+                    <div class="form-group">
+                        <label class="form-label">NIPD/NIS</label>
+                        <input type="text" id="vote-nipd" class="form-input" maxlength="12" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kandidat</label>
+                        <select id="vote-candidate" class="form-select" required>
+                            <option value="">Memuat data kandidat...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal</label>
+                        <input type="date" id="vote-date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Waktu</label>
+                        <input type="time" id="vote-time" class="form-input" step="1" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeVoteModal()">Batal</button>
+                <button class="btn btn-primary" onclick="saveVote()">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Candidate Modal -->
+    <div id="candidate-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="candidate-modal-title">Tambah Kandidat</div>
+            </div>
+            <div class="modal-body">
+                <form id="candidate-form">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Urut</label>
+                        <input type="text" id="candidate-number" class="form-input" maxlength="2" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" id="candidate-name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kelas</label>
+                        <input type="text" id="candidate-class" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Visi</label>
+                        <textarea id="candidate-visi" class="form-textarea" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Misi (pisahkan dengan enter)</label>
+                        <textarea id="candidate-misi" class="form-textarea" rows="5" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Program Unggulan</label>
+                        <div class="program-preview" id="program-preview" style="display: none;">
+                            <div class="program-title" id="program-preview-title">Judul Program</div>
+                            <div class="program-description" id="program-preview-description">Deskripsi program</div>
+                        </div>
+                        <input type="text" id="candidate-program-title" class="form-input" placeholder="Judul Program" required>
+                        <textarea id="candidate-program-description" class="form-textarea" rows="3" placeholder="Deskripsi Program" required style="margin-top: 0.5rem;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jargon</label>
+                        <input type="text" id="candidate-jargon" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tagline</label>
+                        <input type="text" id="candidate-tagline" class="form-input" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCandidateModal()">Batal</button>
+                <button class="btn btn-primary" id="save-candidate-btn" onclick="saveCandidate()">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="export-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Export Data ke Excel</div>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Pilih Format Export:</label>
+                    <div class="export-options">
+                        <div class="export-option selected" onclick="selectExportOption('simple')">
+                            <div class="export-icon">
+                                <i class="fas fa-table"></i>
+                            </div>
+                            <div class="export-title">Format Sederhana</div>
+                            <div class="export-description">Tabel sederhana dengan data dasar</div>
+                        </div>
+                        <div class="export-option" onclick="selectExportOption('detailed')">
+                            <div class="export-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="export-title">Format Detail</div>
+                            <div class="export-description">Tabel lengkap dengan semua informasi</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pilih Rentang Tanggal:</label>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="date" id="export-start-date" class="form-input">
+                        <input type="date" id="export-end-date" class="form-input">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeExportModal()">Batal</button>
+                <button class="btn btn-export" id="confirm-export-btn" onclick="confirmExport()">
+                    <i class="fas fa-file-excel"></i> Export Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <!-- JSZip library for creating zip files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
