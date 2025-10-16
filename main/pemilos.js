@@ -49,7 +49,7 @@
         // Countdown timer for voting period
         function startCountdown() {
             // Set the end date for voting
-            const endDate = new Date('February 17, 2026 15:00:00').getTime();
+            const endDate = new Date('October 17, 2025 11:30:00').getTime();
             
             const timer = setInterval(function() {
                 const now = new Date().getTime();
@@ -945,4 +945,5 @@
         });
 
         console.log('📱 E-Voting System for OSIS script loaded successfully');
+
     
